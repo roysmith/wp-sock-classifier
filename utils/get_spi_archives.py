@@ -17,7 +17,6 @@ import argparse
 import re
 import urllib.parse
 from pathlib import Path
-from pprint import pprint
 
 import mwclient
 
@@ -74,12 +73,12 @@ def main():
             print('examined %d pages, %d IPv4, %d IPv6, wrote %d archives' %
                   (page_count, ipv4_count, ipv6_count, archive_count))
 
-        m = ARCHIVE_PATTERN.match(page.page_title)
-        if not m:
+        match = ARCHIVE_PATTERN.match(page.page_title)
+        if not match:
             if args.verbose:
                 print('rejecting non-case')
             continue
-        username = m.group(1)
+        username = match.group(1)
         if IPV4_PATTERN.match(username):
             ipv4_count += 1
             if args.verbose:
@@ -96,7 +95,7 @@ def main():
             print('writing', path)
         with path.open('w') as out:
             print(page.text(), file=out)
-        
+
         archive_count += 1
         if args.limit and (archive_count >= args.limit):
             break
