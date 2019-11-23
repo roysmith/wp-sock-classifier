@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Utility to retrieve SPI casearchivse.
+"""Utility to retrieve SPI case archives.
 
 SPI archives under [[WP:Sockpuppet investigations/<master>/Archive]]
 are retrieved.  The wikitext for each case is stored in a file named
