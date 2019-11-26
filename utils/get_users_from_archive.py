@@ -47,10 +47,6 @@ def main():
                         help='SPI archive file to read',
                         type=open,
                         required=True)
-    parser.add_argument('--out',
-                        help='output file to write',
-                        type=argparse.FileType('w'),
-                        required=True)
     args = parser.parse_args()
 
     site = mwclient.Site(SITE)
@@ -61,9 +57,9 @@ def main():
         suspect = {
             'username': username,
             'master': master_flag,
-            'initial_report_date': spi_date_to_iso(spi_date),
+            'spi_date': spi_date_to_iso(spi_date),
             }
-        print(json.dumps(suspect), file=args.out)
+        print(json.dumps(suspect))
 
 
 
