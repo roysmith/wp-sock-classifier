@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/SPISuspect",
+    "definitions": {
+	"SPISuspect": {
+	    "type": "object",
+	    "additionalProperties": false,
+	    "properties": {
+		"username": {
+		    "type": "string"
+		},
+		"master": {
+		    "type": "boolean"
+		},
+		"spi_date": {
+		    "type": "string",
+		    "format": "date"
+		}
+	    },
+	    "required": [
+		"master",
+		"spi_date",
+		"username"
+	    ],
+	    "title": "SPISuspect"
+	}
+    }
+}
