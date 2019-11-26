@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+message Suspect {
+  /*
+   * Bare username, no namespace prefix.
+   */
+  string username = 1;
+  
+  /* 
+   * This user is (suspected of being) a sockmaster.
+   */
+  bool master = 2;
+  
+  /*
+   * This user has been blocked indefinitely.  It's possible that
+   * the block is for something other than socking.
+   */
+  bool blocked = 3;
+  
+  /*
+   * Date (in ISO-8601 format) when the user was mentioned in a SPI
+   * case.  For the master, this is set to the first date mentioned in
+   * the case.
+   */
+  string initial_report_date = 4;
+
+  /*
+   * Date (in ISO-8601 format) when the user's account was created.
+   */
+  string creation_date = 5;
+
+  /*
+   * Type of account creation.
+   */
+  enum CreationType {
+    UNKNOWN = 0;
+    CREATE = 1;
+    AUTOCREATE = 2;
+    BYEMAIL = 3;
+    CREATE2 = 4;
+  }
+  CreationType creation_type = 6;
+
+  /*
+   * Date (in ISO_8601 format) when the user's first known edit
+   * was made.
+   */
+  string first_edit_date = 7;
+}
