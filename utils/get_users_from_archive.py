@@ -11,11 +11,11 @@
 
 """
 
+from pathlib import Path
 import argparse
 import datetime
-import sys
 import json
-from pathlib import Path
+import sys
 
 import mwclient
 import mwparserfromhell
