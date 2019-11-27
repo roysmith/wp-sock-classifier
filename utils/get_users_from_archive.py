@@ -88,8 +88,7 @@ def get_suspects(stream):
     """
     suspects = []
     try:
-        wikicode = mwparserfromhell.parse(stream.read())
-        for sock, spi_date, master in parse_suspects(wikicode):
+        for sock, spi_date, master in parse_suspects(stream):
             suspect = {'sock': sock} if sock else {}
             suspect['master'] = master
             suspect['date'] = spi_date_to_iso(spi_date)
@@ -101,7 +100,7 @@ def get_suspects(stream):
     except Exception as ex:
         raise RuntimeError("error in %s" % stream.name) from ex
 
-def parse_suspects(wikicode):
+def parse_suspects(stream):
     """Iterate over (sock, spi_date, master) tuples.
 
     * sock is the account name of the suspected sock (no User:
@@ -113,7 +112,7 @@ def parse_suspects(wikicode):
     * master is the username of the suspected sock master.
 
     """
-
+    wikicode = mwparserfromhell.parse(stream.read())
     templates = wikicode.filter_templates(
         matches=lambda template: template.name.matches('SPIarchive notice'))
     count = len(templates)
@@ -132,9 +131,11 @@ def parse_suspects(wikicode):
         templates = section.filter_templates(
             matches=lambda template: template.name.matches('checkuser'))
         for template in templates:
-            puppet_username = template.get(1).value.strip_code()
-            yield (puppet_username, spi_date, master_username)
-
+            if template.has(1):
+                puppet_username = template.get(1).value.strip_code()
+                yield (puppet_username, spi_date, master_username)
+            else:
+                print("Skipping template (%s), missing param: %s" % (stream.name, template), file=sys.stderr)
 
 def spi_date_to_iso(spi_date):
 
