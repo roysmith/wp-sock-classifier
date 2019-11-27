@@ -87,30 +87,31 @@ def get_suspects(stream):
 
     """
     suspects = []
-    wikicode = mwparserfromhell.parse(stream.read())
     try:
-        for username, spi_date, master_flag in parse_suspects(wikicode):
-            suspect = {
-                'username': username,
-                'master': master_flag,
-                'spi_date': spi_date_to_iso(spi_date),
-            }
+        wikicode = mwparserfromhell.parse(stream.read())
+        for sock, spi_date, master in parse_suspects(wikicode):
+            suspect = {'sock': sock} if sock else {}
+            suspect['master'] = master
+            suspect['date'] = spi_date_to_iso(spi_date)
             suspects.append(suspect)
+        return suspects
     except ArchiveError as ex:
         print("Skipping %s: %s" % (stream.name, ex), file=sys.stderr)
         return []
-    return suspects
-
+    except Exception as ex:
+        raise RuntimeError("error in %s" % stream.name) from ex
 
 def parse_suspects(wikicode):
-    """Iterate over (username, spi_date, master_flag) tuples.
+    """Iterate over (sock, spi_date, master) tuples.
 
-    * username is the account name of the suspect (no User: prefix)
+    * sock is the account name of the suspected sock (no User:
+      prefix).  For suspected sockmasters, this will be None.
 
     * spi_date is the date string in the format it appears in the SPI
-    case, i.e., '22 November 2019'
+    case, i.e., '22 November 2019'.
 
-    * master_flag is True if this is the suspected sock master
+    * master is the username of the suspected sock master.
+
     """
 
     templates = wikicode.filter_templates(
@@ -125,14 +126,14 @@ def parse_suspects(wikicode):
     for section in wikicode.get_sections(levels=[3]):
         spi_date = section.filter_headings()[0].title
         if master_pending:
-            yield (master_username, spi_date, True)
+            yield (None, spi_date, master_username)
             master_pending = False
 
         templates = section.filter_templates(
             matches=lambda template: template.name.matches('checkuser'))
         for template in templates:
             puppet_username = template.get(1).value.strip_code()
-            yield (puppet_username, spi_date, False)
+            yield (puppet_username, spi_date, master_username)
 
 
 def spi_date_to_iso(spi_date):
