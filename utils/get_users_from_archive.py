@@ -41,14 +41,14 @@ MONTHS = {
 }
 
 def main():
-    parser = argparse.ArgumentParser(epilog='''If neither --archive nor --dir
+    parser = argparse.ArgumentParser(epilog='''If neither --archive nor --spi_dir
     are given, reads from stdin.''')
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument('--archive',
                              help='SPI archive file to read',
                              default=sys.stdin,
                              type=open)
-    input_group.add_argument('--dir',
+    input_group.add_argument('--spi_dir',
                              help='''Directory where SPI archives files
                              can be found.  Each file in that directory
                              will be processed in turn.''',
@@ -58,8 +58,8 @@ def main():
     site = mwclient.Site(SITE)
     namespaces = {v: k for k, v in site.namespaces.items()}
 
-    if args.dir:
-        for path in args.dir.iterdir():
+    if args.spi_dir:
+        for path in args.spi_dir.iterdir():
             process_archive(path.open())
     else:
         process_archive(args.archive)
