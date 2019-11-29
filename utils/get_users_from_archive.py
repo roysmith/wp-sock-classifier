@@ -45,17 +45,16 @@ MONTHS = {
 logger = None
 
 def main():
-    parser = argparse.ArgumentParser(epilog='''If neither --archive nor --spi_dir
+    parser = argparse.ArgumentParser(epilog='''If neither --archive nor --archive_dir
     are given, reads from stdin.''')
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument('--archive',
                              help='SPI archive file to read',
                              default=sys.stdin,
                              type=open)
-    input_group.add_argument('--spi_dir',
-                             help='''Directory where SPI archives files
-                             can be found.  Each file in that directory
-                             will be processed in turn.''',
+    input_group.add_argument('--archive_dir',
+                             help='''Directory where SPI archives files can be found.  Each file in that
+                             directory will be processed in turn.''',
                              type=directory_path)
     parser.add_argument('--log',
                         help='File to write log messages to',
@@ -64,8 +63,8 @@ def main():
     args = parser.parse_args()
     configure_logging(args.log)
 
-    if args.spi_dir:
-        for path in args.spi_dir.iterdir():
+    if args.archive_dir:
+        for path in args.archive_dir.iterdir():
             process_archive(path.open())
     else:
         process_archive(args.archive)
