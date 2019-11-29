@@ -15,6 +15,7 @@ from pathlib import Path
 import argparse
 import datetime
 import json
+import logging
 import sys
 
 import mwclient
@@ -40,6 +41,8 @@ MONTHS = {
     'december': 12
 }
 
+logger = None
+
 def main():
     parser = argparse.ArgumentParser(epilog='''If neither --archive nor --spi_dir
     are given, reads from stdin.''')
@@ -53,7 +56,14 @@ def main():
                              can be found.  Each file in that directory
                              will be processed in turn.''',
                              type=directory_path)
+    parser.add_argument('--log',
+                        help='File to write log messages to',
+                        type=argparse.FileType('a'),
+                        default='get_users_from_archive.log')
     args = parser.parse_args()
+    logging.basicConfig(stream=args.log, level=logging.INFO)
+    global logger
+    logger = logging.getLogger()
 
     site = mwclient.Site(SITE)
     namespaces = {v: k for k, v in site.namespaces.items()}
@@ -82,7 +92,7 @@ def get_suspects(stream):
 
     Returns a list of suspects.
 
-    Returns an empty list and prints a diagnostic message on any kind
+    Returns an empty list and logs a diagnostic message on any kind
     of parsing error.
 
     """
@@ -95,7 +105,7 @@ def get_suspects(stream):
             suspects.append(suspect)
         return suspects
     except ArchiveError as ex:
-        print("Skipping %s: %s" % (stream.name, ex), file=sys.stderr)
+        logger.info("Skipping %s: %s", stream.name, ex)
         return []
     except Exception as ex:
         raise RuntimeError("error in %s" % stream.name) from ex
@@ -135,7 +145,7 @@ def parse_suspects(stream):
                 puppet_username = template.get(1).value.strip_code()
                 yield (puppet_username, spi_date, master_username)
             else:
-                print("Skipping template (%s), missing param: %s" % (stream.name, template), file=sys.stderr)
+                logger.info("Skipping template (%s), missing param: %s", stream.name, template)
 
 def spi_date_to_iso(spi_date):
 
