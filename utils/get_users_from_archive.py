@@ -74,7 +74,9 @@ def main():
 
 
 def configure_logging(log_stream):
-    logging.basicConfig(stream=log_stream, level=logging.INFO)
+    logging.basicConfig(stream=log_stream, level=logging.INFO,
+                        format='%(process)d %(asctime)s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     global logger
     logger = logging.getLogger()
 
@@ -109,7 +111,7 @@ def get_suspects(stream):
             suspects.append(suspect)
         return suspects
     except ArchiveError as ex:
-        logger.info("Skipping %s: %s", stream.name, ex)
+        logger.warning("Skipping %s: %s", stream.name, ex)
         return []
     except Exception as ex:
         raise RuntimeError("error in %s" % stream.name) from ex
@@ -149,7 +151,7 @@ def parse_suspects(stream):
                 puppet_username = template.get(1).value.strip_code()
                 yield (puppet_username, spi_date, master_username)
             else:
-                logger.info("Skipping template (%s), missing param: %s", stream.name, template)
+                logger.warning("Skipping template (%s), missing param: %s", stream.name, template)
 
 def spi_date_to_iso(spi_date):
 
