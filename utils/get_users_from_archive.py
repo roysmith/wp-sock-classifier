@@ -13,6 +13,7 @@
 
 from pathlib import Path
 import argparse
+import calendar
 import datetime
 import json
 import logging
@@ -63,9 +64,6 @@ def main():
     args = parser.parse_args()
     configure_logging(args.log)
 
-    site = mwclient.Site(SITE)
-    namespaces = {v: k for k, v in site.namespaces.items()}
-
     if args.spi_dir:
         for path in args.spi_dir.iterdir():
             process_archive(path.open())
@@ -107,7 +105,12 @@ def get_suspects(stream):
         for sock, spi_date, master in parse_suspects(stream):
             suspect = {'master': master} if master else {}
             suspect['sock'] = sock
-            suspect['date'] = spi_date_to_iso(spi_date)
+            suspect['spi_date'] = spi_date_to_iso(spi_date)
+
+            reg_date = get_registration_date(sock)
+            if reg_date:
+                suspect['reg_time'] = reg_date.isoformat()
+
             suspects.append(suspect)
         return suspects
     except ArchiveError as ex:
@@ -115,6 +118,23 @@ def get_suspects(stream):
         return []
     except Exception as ex:
         raise RuntimeError("error in %s" % stream.name) from ex
+
+
+def get_registration_date(username):
+    """Return a (UTC) datetime if a registration time can be found for the user.
+    If no entry can be found in the logs, return None.
+    """
+    site = mwclient.Site(SITE)
+    events = list(site.logevents(title='User:%s' % username, type='newusers'))
+    if len(events) == 0:
+        logger.info("Can't find newuser log entry for %s", username)
+        return
+    if len(events) > 1:
+        logger.warning("Multiple newuser log entries for %s", username)
+        return
+    timestamp = events[0]['timestamp']
+    return datetime.datetime.utcfromtimestamp(calendar.timegm(timestamp))
+
 
 def parse_suspects(stream):
     """Iterate over (sock, spi_date, master) tuples.
