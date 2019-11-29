@@ -105,8 +105,8 @@ def get_suspects(stream):
     suspects = []
     try:
         for sock, spi_date, master in parse_suspects(stream):
-            suspect = {'sock': sock} if sock else {}
-            suspect['master'] = master
+            suspect = {'master': master} if master else {}
+            suspect['sock'] = sock
             suspect['date'] = spi_date_to_iso(spi_date)
             suspects.append(suspect)
         return suspects
@@ -120,12 +120,13 @@ def parse_suspects(stream):
     """Iterate over (sock, spi_date, master) tuples.
 
     * sock is the account name of the suspected sock (no User:
-      prefix).  For suspected sockmasters, this will be None.
+      prefix).
 
     * spi_date is the date string in the format it appears in the SPI
     case, i.e., '22 November 2019'.
 
-    * master is the username of the suspected sock master.
+    * master is the username of the suspected sockmaster.  For
+    sockmasters, this will be None, and sock wil hold the username.
 
     """
     wikicode = mwparserfromhell.parse(stream.read())
@@ -141,7 +142,12 @@ def parse_suspects(stream):
     for section in wikicode.get_sections(levels=[3]):
         spi_date = section.filter_headings()[0].title
         if master_pending:
-            yield (None, spi_date, master_username)
+            # We havn't printed the data from the {{SPIarchive
+            # notice}} yet, so print it now.  We needed to delay
+            # printing that until we processed the first level-3
+            # heading, because that's when we discover the date of the
+            # first report.
+            yield (master_username, spi_date, None)
             master_pending = False
 
         templates = section.filter_templates(
