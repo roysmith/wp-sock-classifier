@@ -59,7 +59,7 @@ def main():
     parser.add_argument('--log',
                         help='File to write log messages to',
                         type=argparse.FileType('a'),
-                        default='get_users_from_archive.log')
+                        default=str(Path.home() / 'logs' / 'get_users_from_archive.log'))
     args = parser.parse_args()
     configure_logging(args.log)
 
