@@ -61,9 +61,7 @@ def main():
                         type=argparse.FileType('a'),
                         default='get_users_from_archive.log')
     args = parser.parse_args()
-    logging.basicConfig(stream=args.log, level=logging.INFO)
-    global logger
-    logger = logging.getLogger()
+    configure_logging(args.log)
 
     site = mwclient.Site(SITE)
     namespaces = {v: k for k, v in site.namespaces.items()}
@@ -73,6 +71,12 @@ def main():
             process_archive(path.open())
     else:
         process_archive(args.archive)
+
+
+def configure_logging(log_stream):
+    logging.basicConfig(stream=log_stream, level=logging.INFO)
+    global logger
+    logger = logging.getLogger()
 
 
 def directory_path(arg):
