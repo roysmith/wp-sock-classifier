@@ -72,7 +72,7 @@ def main():
 
 def configure_logging(log_stream):
     logging.basicConfig(stream=log_stream, level=logging.INFO,
-                        format='%(process)d %(asctime)s %(message)s',
+                        format='%(process)d %(asctime)s [%(levelname)s] %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
 
 
