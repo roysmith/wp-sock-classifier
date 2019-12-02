@@ -116,6 +116,10 @@ class Archive:
                 if reg_date:
                     suspect['reg_time'] = reg_date.isoformat()
 
+                first_contrib_time = self.get_first_contribution_time(sock)
+                if first_contrib_time:
+                    suspect['first_contrib_time'] = first_contrib_time.isoformat()
+
                 suspects.append(suspect)
             return suspects
         except ArchiveError as ex:
@@ -137,6 +141,24 @@ class Archive:
             self.logger.warning("Multiple newuser log entries for %s", username)
             return
         timestamp = events[0]['timestamp']
+        return datetime.datetime.utcfromtimestamp(calendar.timegm(timestamp))
+
+
+    def get_first_contribution_time(self, sock):
+        """Return a (UTC) datetime if the first edit time can be found for the user.
+        If no edits can be found, return None.
+
+        Note that if the user's first edit has been deleted, it won't
+        be visible here.  In that case, this returns the time of the
+        first non-deleted edit.  It's unclear how revdel affects this.
+
+        """
+        contribs = self.site.usercontributions(sock, dir='newer', limit=1)
+        try:
+            first_edit = contribs.next()
+        except StopIteration:
+            return
+        timestamp = first_edit['timestamp']
         return datetime.datetime.utcfromtimestamp(calendar.timegm(timestamp))
 
 
