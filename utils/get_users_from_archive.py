@@ -225,7 +225,7 @@ class Archive:
                     puppet_username = template.get(1).value.strip_code()
                     yield (puppet_username, spi_date, master_username)
                 else:
-                    self.logger.warning("Skipping template (%s), missing param: %s", stream.name, template)
+                    self.logger.warning("Skipping template (%s), missing param: %s", self.stream.name, template)
 
     def spi_date_to_iso(self, spi_date):
         """Convert a string like "02 January 2018" into
