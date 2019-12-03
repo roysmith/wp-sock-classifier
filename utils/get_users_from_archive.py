@@ -19,13 +19,12 @@ import json
 import logging
 import sys
 
-import mwclient
 import mwparserfromhell
+import toolforge
 
 class ArchiveError(ValueError):
     pass
 
-SITE = 'en.wikipedia.org'
 
 MONTHS = {
     'january': 1,
@@ -90,7 +89,8 @@ class Archive:
     def __init__(self, stream):
         self.stream = stream
         self.logger = logging.getLogger('archive')
-        self.site = mwclient.Site(SITE)
+        self.db = toolforge.connect('enwiki')
+
     
     def process(self):
         for suspect in self.get_suspects():
@@ -133,15 +133,31 @@ class Archive:
         """Return a (UTC) datetime if a registration time can be found for the user.
         If no entry can be found in the logs, return None.
         """
-        events = list(self.site.logevents(title='User:%s' % username, type='newusers'))
-        if len(events) == 0:
-            self.logger.info("Can't find newuser log entry for %s", username)
-            return
-        if len(events) > 1:
-            self.logger.warning("Multiple newuser log entries for %s", username)
-            return
-        timestamp = events[0]['timestamp']
-        return datetime.datetime.utcfromtimestamp(calendar.timegm(timestamp))
+        with self.db.cursor() as cur:
+            cur.execute("""
+            SELECT user_registration
+            FROM user
+            WHERE user_name = %(username)s
+            """, {'username': username})
+            rows = cur.fetchall()
+            if rows:
+                timestamp = rows[0][0]
+                if timestamp:
+                    return self.wikidb_timestamp_to_datetime(timestamp)
+
+
+    @staticmethod
+    def wikidb_timestamp_to_datetime(ts):
+        """Return a (UTC) datetime from a wiki database timestamp string.
+        This is a 14-digit string of the form YYYYMMDDHHMMSS,
+        i.e. 20191129202516 for 2019 November 29 20:25:16.  See
+        https://www.mediawiki.org/wiki/Manual:Timestamp for more
+        details.
+
+        """
+        parts = (ts[0:4], ts[4:6], ts[6:8], ts[8:10], ts[10:12], ts[12:14])
+        yyyymmddhhmmss = list(map(int, parts))
+        return datetime.datetime(*yyyymmddhhmmss)
 
 
     def get_first_contribution_time(self, sock):
@@ -153,13 +169,19 @@ class Archive:
         first non-deleted edit.  It's unclear how revdel affects this.
 
         """
-        contribs = self.site.usercontributions(sock, dir='newer', limit=1)
-        try:
-            first_edit = contribs.next()
-        except StopIteration:
-            return
-        timestamp = first_edit['timestamp']
-        return datetime.datetime.utcfromtimestamp(calendar.timegm(timestamp))
+        with self.db.cursor() as cur:
+            cur.execute("""
+            SELECT rev_timestamp
+            FROM revision_userindex
+            JOIN actor_revision ON actor_id = rev_actor
+            WHERE actor_name = %(sock)s
+            ORDER by rev_timestamp ASC
+            LIMIT 1
+            """, {'sock': sock})
+            rows = cur.fetchall()
+            if rows:
+                timestamp = rows[0][0]
+                return self.wikidb_timestamp_to_datetime(timestamp)
 
 
     def parse_suspects(self):
