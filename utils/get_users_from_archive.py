@@ -143,6 +143,9 @@ class Archive:
                 if reg_date and first_contrib_time:
                     suspect['first_contrib_days'] = (first_contrib_time - reg_date).total_seconds() / SEC_PER_DAY
 
+                suspect['live_edit_count'] = self.get_live_edit_count(sock)
+                suspect['deleted_edit_count'] = self.get_deleted_edit_count(sock)
+
                 suspects.append(suspect)
             return suspects
         except ArchiveError as ex:
@@ -205,6 +208,30 @@ class Archive:
             if rows:
                 timestamp = rows[0][0]
                 return self.wikidb_timestamp_to_datetime(timestamp)
+
+
+    def get_live_edit_count(self, sock):
+        with self.db.cursor() as cur:
+            cur.execute("""
+            SELECT count(*)
+            FROM revision_userindex
+            JOIN actor ON rev_actor = actor_id
+            WHERE actor_name = %(username)s
+            """, {'username': sock})
+            row = cur.fetchone()
+            return row[0]
+
+
+    def get_deleted_edit_count(self, sock):
+        with self.db.cursor() as cur:
+            cur.execute("""
+            SELECT count(*)
+            FROM archive_userindex
+            JOIN actor ON ar_actor = actor_id
+            WHERE actor_name = %(username)s
+            """, {'username': sock})
+            row = cur.fetchone()
+            return row[0]
 
 
     def parse_suspects(self):
