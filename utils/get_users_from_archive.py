@@ -25,6 +25,7 @@ import toolforge
 class ArchiveError(ValueError):
     pass
 
+SEC_PER_DAY = 60 * 60 * 24
 
 MONTHS = {
     'january': 1,
@@ -119,6 +120,9 @@ class Archive:
                 first_contrib_time = self.get_first_contribution_time(sock)
                 if first_contrib_time:
                     suspect['first_contrib_time'] = first_contrib_time.isoformat()
+
+                if reg_date and first_contrib_time:
+                    suspect['first_contrib_days'] = (first_contrib_time - reg_date).total_seconds() / SEC_PER_DAY
 
                 suspects.append(suspect)
             return suspects
