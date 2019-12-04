@@ -50,7 +50,7 @@ def main():
                              help='SPI archive file to read',
                              default=sys.stdin,
                              type=open)
-    input_group.add_argument('--archive_dir',
+    input_group.add_argument('--archive-dir',
                              help='''Directory where SPI archives files can be found.  Each file in that
                              directory will be processed in turn.''',
                              type=directory_path)
@@ -58,7 +58,7 @@ def main():
                         help='File to write log messages to',
                         type=argparse.FileType('a'),
                         default=str(Path.home() / 'logs' / 'get_users_from_archive.log'))
-    parser.add_argument('--log_level',
+    parser.add_argument('--log-level',
                         help='Logging level',
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
                         default='INFO')
