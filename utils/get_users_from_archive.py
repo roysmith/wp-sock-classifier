@@ -62,11 +62,13 @@ def main():
     configure_logging(args.log)
 
     if args.archive_dir:
-        for path in args.archive_dir.iterdir():
-            archive = Archive(path.open())
-            archive.process()
+        paths = args.archive_dir.iterdir()
+        input_streams = map(lambda p: p.open(), paths)
     else:
-        archive = Archive(args.archive)
+        input_streams = [args.archive]
+
+    for stream in input_streams:
+        archive = Archive(stream)
         archive.process()
 
 
@@ -77,7 +79,7 @@ def configure_logging(log_stream):
 
 
 def directory_path(arg):
-    "Type filter for argparse.add_argument()."
+    "Type filter for argparse.add_argument().  Returns a Path object."
     path = Path(arg)
     if not path.is_dir():
         raise argparse.ArgumentTypeError('not a directory')
