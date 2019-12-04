@@ -58,8 +58,13 @@ def main():
                         help='File to write log messages to',
                         type=argparse.FileType('a'),
                         default=str(Path.home() / 'logs' / 'get_users_from_archive.log'))
+    parser.add_argument('--log_level',
+                        help='Logging level',
+                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+                        default='INFO')
     args = parser.parse_args()
-    configure_logging(args.log)
+    configure_logging(args.log, args.log_level)
+    logger = logging.getLogger('main')
 
     if args.archive_dir:
         paths = args.archive_dir.iterdir()
@@ -67,13 +72,24 @@ def main():
     else:
         input_streams = [args.archive]
 
+    logger.info("Starting work")
+    start_time = datetime.datetime.now()
+
+    count = 0
     for stream in input_streams:
+        count += 1
+        logger.info("Starting archive %d: %s", count, stream.name)
         archive = Archive(stream)
         archive.process()
 
+    finish_time = datetime.datetime.now()
+    elapsed_time = finish_time - start_time
+    logger.info("Processed %d archives in %s", count, elapsed_time)
 
-def configure_logging(log_stream):
-    logging.basicConfig(stream=log_stream, level=logging.INFO,
+
+def configure_logging(log_stream, log_level):
+    logging.basicConfig(stream=log_stream,
+                        level=log_level,
                         format='%(process)d %(asctime)s [%(levelname)s] %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -96,7 +112,8 @@ class Archive:
 
     
     def process(self):
-        for suspect in self.get_suspects():
+        suspects = self.get_suspects()
+        for suspect in suspects:
             print(json.dumps(suspect))
 
     def get_suspects(self):
@@ -215,6 +232,7 @@ class Archive:
 
         for section in wikicode.get_sections(levels=[3]):
             spi_date = section.filter_headings()[0].title
+            self.logger.debug("Processing %s", spi_date)
             if master_pending:
                 # We havn't printed the data from the {{SPIarchive
                 # notice}} yet, so print it now.  We needed to delay
@@ -229,6 +247,7 @@ class Archive:
             for template in templates:
                 if template.has(1):
                     puppet_username = template.get(1).value.strip_code()
+                    self.logger.debug("Found %s", puppet_username)
                     yield (puppet_username, spi_date, master_username)
                 else:
                     self.logger.warning("Skipping template (%s), missing param: %s", self.stream.name, template)
