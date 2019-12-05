@@ -59,6 +59,8 @@ def main():
                         help='File to write log messages to',
                         type=argparse.FileType('a'),
                         default=str(Path.home() / 'sock-classifier/logs/get_features.log'))
+    parser.add_argument('--job-name',
+                        help='job name, used for status reporting')
     parser.add_argument('--log-level',
                         help='Logging level',
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
@@ -73,7 +75,7 @@ def main():
     else:
         input_streams = [args.archive]
 
-    logger.info("Starting work")
+    logger.info("Starting work, job-name = %s", args.job_name)
     start_time = datetime.datetime.now()
 
     count = 0

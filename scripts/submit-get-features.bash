@@ -52,7 +52,8 @@ cat > $job_dir/job.bash << EOF
 source $base_dir/env/bin/activate
 
 $base_dir/src/utils/get_features.py \\
-  --archive-dir $base_dir/data/$archive_dir \\
+  --archive-dir=$base_dir/data/$archive_dir \\
+  --job-name=$job_name \\
   --log=$base_dir/logs/get_features.log
 
 EOF
