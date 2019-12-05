@@ -58,7 +58,7 @@ def main():
     parser.add_argument('--log',
                         help='File to write log messages to',
                         type=argparse.FileType('a'),
-                        default=str(Path.home() / 'logs' / 'get_users_from_archive.log'))
+                        default=str(Path.home() / 'sock-classifier/logs/get_features.log'))
     parser.add_argument('--log-level',
                         help='Logging level',
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
