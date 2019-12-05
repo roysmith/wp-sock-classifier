@@ -26,6 +26,7 @@ class ArchiveError(ValueError):
     pass
 
 SEC_PER_DAY = 60 * 60 * 24
+NAMESPACE_USER = 2
 
 MONTHS = {
     'january': 1,
@@ -145,6 +146,7 @@ class Archive:
 
                 suspect['live_edit_count'] = self.get_live_edit_count(sock)
                 suspect['deleted_edit_count'] = self.get_deleted_edit_count(sock)
+                suspect['block_count'] = self.get_block_count(sock)
 
                 suspects.append(suspect)
             return suspects
@@ -230,6 +232,21 @@ class Archive:
             JOIN actor ON ar_actor = actor_id
             WHERE actor_name = %(username)s
             """, {'username': sock})
+            row = cur.fetchone()
+            return row[0]
+
+
+    def get_block_count(self, sock):
+        '''Returns the number of times the user has been blocked.'''
+        with self.db.cursor() as cur:
+            cur.execute("""
+            SELECT count(*)
+            FROM logging_logindex
+            WHERE log_namespace = %(namespace)s
+              and log_title = %(username)s
+              and log_type = 'block'
+              and log_action = 'block'
+            """, {'namespace': NAMESPACE_USER, 'username': sock})
             row = cur.fetchone()
             return row[0]
 
