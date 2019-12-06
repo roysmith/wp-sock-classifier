@@ -55,6 +55,10 @@ def main():
                              help='''Directory where SPI archives files can be found.  Each file in that
                              directory will be processed in turn.''',
                              type=directory_path)
+    parser.add_argument('--out',
+                        help='Output file',
+                        type=argparse.FileType('w'),
+                        default=sys.stdout)
     parser.add_argument('--log',
                         help='File to write log messages to',
                         type=argparse.FileType('a'),
@@ -84,7 +88,7 @@ def main():
         logger.info("Starting archive %d: %s", count, stream.name)
         archive = Archive(stream)
         for suspect in archive.get_suspects():
-            print(json.dumps(suspect))
+            print(json.dumps(suspect), file=args.out)
 
     finish_time = datetime.datetime.now()
     elapsed_time = finish_time - start_time
