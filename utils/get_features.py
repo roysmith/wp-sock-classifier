@@ -83,7 +83,8 @@ def main():
         count += 1
         logger.info("Starting archive %d: %s", count, stream.name)
         archive = Archive(stream)
-        archive.process()
+        for suspect in archive.get_suspects():
+            print(json.dumps(suspect))
 
     finish_time = datetime.datetime.now()
     elapsed_time = finish_time - start_time
@@ -113,11 +114,6 @@ class Archive:
         self.logger = logging.getLogger('archive')
         self.db = toolforge.connect('enwiki')
 
-    
-    def process(self):
-        suspects = self.get_suspects()
-        for suspect in suspects:
-            print(json.dumps(suspect))
 
     def get_suspects(self):
         """Get the suspected socks from a stream containing an SPI archive.
@@ -302,11 +298,11 @@ class Archive:
             spi_date = section.filter_headings()[0].title
             self.logger.debug("Processing %s", spi_date)
             if master_pending:
-                # We havn't printed the data from the {{SPIarchive
-                # notice}} yet, so print it now.  We needed to delay
-                # printing that until we processed the first level-3
-                # heading, because that's when we discover the date of the
-                # first report.
+                # We havn't emitted the data from the {{SPIarchive
+                # notice}} yet, so emit it now.  We needed to delay
+                # emitting that until we processed the first level-3
+                # heading, because that's when we discover the date of
+                # the first report.
                 yield (master_username, spi_date, None)
                 master_pending = False
 
