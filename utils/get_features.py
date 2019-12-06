@@ -123,6 +123,10 @@ class Archive:
         Returns an empty list and logs a diagnostic message on any kind
         of parsing error.
 
+        We build the internal suspect list instead of just yielding
+        the suspect directly, because we want any subsequent parsing
+        errors to reject the entire archive as unreliable.
+
         """
         suspects = []
         try:
