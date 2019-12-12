@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Extract information about suspected socks from a SPI case archive.
+"""Extract information about suspected socks from SPI case archives.
 
 The goal here is to only extract information which is specific to the
 SPI report, so just the username and the suspected master.  Other
@@ -16,6 +16,8 @@ import logging
 import sys
 
 import mwparserfromhell
+
+import config
 
 class ArchiveError(ValueError):
     "An error was found when parsing an SPI archive"
@@ -38,19 +40,13 @@ def main():
                         help='Output file',
                         type=argparse.FileType('w'),
                         default=sys.stdout)
-    parser.add_argument('--log',
-                        help='File to write log messages to',
-                        type=argparse.FileType('a'),
-                        default=str(Path.home() / 'sock-classifier/logs/get_features.log'))
-    parser.add_argument('--job-name',
-                        help='job name, used for status reporting')
-    parser.add_argument('--log-level',
-                        help='Logging level',
-                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-                        default='INFO')
+    config.provide_logging_cli(parser)
+
+
     args = parser.parse_args()
-    configure_logging(args.log, args.log_level)
-    logger = logging.getLogger('main')
+    config.configure_logging(args)
+
+    logger = logging.getLogger('get_suspects')
 
     if args.archive_dir:
         paths = args.archive_dir.iterdir()
@@ -74,13 +70,6 @@ def main():
     logger.info("Processed %d archives in %s", count, elapsed_time)
 
 
-def configure_logging(log_stream, log_level):
-    "Configure logging"
-    logging.basicConfig(stream=log_stream,
-                        level=log_level,
-                        format='%(process)d %(asctime)s [%(levelname)s] %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-
 
 def directory_path(arg):
     "Type filter for argparse.add_argument().  Returns a Path object."
@@ -95,7 +84,7 @@ class Archive:
 
     def __init__(self, stream):
         self.stream = stream
-        self.logger = logging.getLogger('archive')
+        self.logger = logging.getLogger('get_suspects.archive')
 
 
     def get_suspects(self):
