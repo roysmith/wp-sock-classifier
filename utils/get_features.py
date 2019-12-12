@@ -16,6 +16,8 @@ import sys
 
 import toolforge
 
+import config
+
 class ArchiveError(ValueError):
     pass
 
@@ -29,21 +31,14 @@ def main():
                         help='log progress every N suspects',
                         type=int,
                         metavar='N')
-    parser.add_argument('--log',
-                        help='File to write log messages to',
-                        type=argparse.FileType('a'),
-                        default=str(Path.home() / 'sock-classifier/logs/get_features.log'))
-    parser.add_argument('--job-name',
-                        help='job name, used for status reporting')
-    parser.add_argument('--log-level',
-                        help='Logging level',
-                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-                        default='INFO')
-    args = parser.parse_args()
-    configure_logging(args.log, args.log_level)
-    logger = logging.getLogger('main')
+    config.provide_logging_cli(parser)
 
-    logger.info("Starting work, job-name = %s", args.job_name)
+    args = parser.parse_args()
+    config.configure_logging(args)
+    logger = logging.getLogger('get_features')
+
+    logger.info("Starting work")
+    logger.info("job-name = %s", args.job_name)
     start_time = datetime.datetime.now()
 
     finder = FeatureFinder(toolforge.connect('enwiki'))
@@ -62,19 +57,12 @@ def main():
     logger.info("Processed %d suspects in %s", count, elapsed_time)
 
 
-def configure_logging(log_stream, log_level):
-    logging.basicConfig(stream=log_stream,
-                        level=log_level,
-                        format='%(process)d %(asctime)s [%(levelname)s] %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-
-
 class FeatureFinder():
     """Find suspect features.
 
     """
     def __init__(self, db):
-        self.logger = logging.getLogger('feature-finder')
+        self.logger = logging.getLogger('get_features.featureFinder')
         self.db = db
 
 
