@@ -33,7 +33,7 @@ base_dir=$HOME/sock-classifier
 # shouldn't need to touch anything after here.
 
 if [ $# -ne "1" ]; then
-    echo "Usage: submit-get-features.bash archive-dir"
+    echo "Usage: submit-get-features.bash input-file"
     exit 1
 fi
 input_file=$1
