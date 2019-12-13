@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Submit a get_suspects job to the execution grid.  This will create a
+# Submit a get_socks job to the execution grid.  This will create a
 # per-job directory under $base_dir/jobs/.  Within that directory will
 # be created a number of files:
 #
@@ -20,7 +20,7 @@
 # one got there last and stepped on the others.
 #
 # In addition, logging will be to a log file shared by all
-# get-suspects jobs ($base_dir/logs/get-suspects.log).  There's no
+# get-socks jobs ($base_dir/logs/get-socks.log).  There's no
 # particular need to have a shared log file.  I just find it
 # convenient because I can keep "tail -f" running on it all the time
 # in a window to keep an eye on things.
@@ -33,12 +33,12 @@ base_dir=$HOME/sock-classifier
 # shouldn't need to touch anything after here.
 
 if [ $# -ne "1" ]; then
-    echo "Usage: submit-get-suspects.bash archive-dir"
+    echo "Usage: submit-get-socks.bash archive-dir"
     exit 1
 fi
 archive_dir=$1
 
-program_name=get_suspects
+program_name=get_socks
 
 job_name=$program_name.`date +%Y-%m-%d-%H-%M-%S`
 job_dir=$base_dir/jobs/$job_name
@@ -56,7 +56,7 @@ source $base_dir/env/bin/activate
 $base_dir/src/utils/$program_name.py \\
   --archive-dir=$base_dir/data/$archive_dir \\
   --job-name=$job_name \\
-  --log=$base_dir/logs/get_features.log
+  --log=$base_dir/logs/get_socks.log
 
 EOF
 chmod +x $job_dir/job.bash
