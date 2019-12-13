@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-"""Extract information about suspected socks from SPI case archives.
+"""Find known socks, based on SPI case archives.
 
 The goal here is to only extract information which is specific to the
-SPI report, so just the username and the suspected master.  Other
-features about the user will be added later in the pipeline.
+SPI report, so just the username and the sockmaster.  Other features
+about the user will be added later in the pipeline.
 
 """
 
@@ -16,6 +16,7 @@ import logging
 import sys
 
 import mwparserfromhell
+import toolforge
 
 import config
 
@@ -47,6 +48,7 @@ def main():
     config.configure_logging(args)
 
     logger = logging.getLogger('get_suspects')
+    db = toolforge.connect('enwiki')
 
     if args.archive_dir:
         paths = args.archive_dir.iterdir()
@@ -57,18 +59,55 @@ def main():
     logger.info("Starting work, job-name = %s", args.job_name)
     start_time = datetime.datetime.now()
 
-    count = 0
+    archive_count = 0
+    suspect_count = 0
+    sock_count = 0
+    non_sock_count = 0
     for stream in input_streams:
-        count += 1
-        logger.info("Starting archive %d: %s", count, stream.name)
+        archive_count += 1
+        logger.info("Starting archive %d: %s", archive_count, stream.name)
         archive = Archive(stream)
         for suspect in archive.get_suspects():
-            print(json.dumps(suspect), file=args.out)
+            suspect_count += 1
+            user = suspect['user']
+            if is_sock(db, user):
+                sock_count += 1
+                suspect['is_sock'] = True
+                print(json.dumps(suspect), file=args.out)
+            else:
+                non_sock_count += 1
+                logger.info("Skipping non-sock: %s", user)
 
     finish_time = datetime.datetime.now()
     elapsed_time = finish_time - start_time
-    logger.info("Processed %d archives in %s", count, elapsed_time)
+    logger.info("Done with %d archives, %d suspects, %d socks, %d non-socks in %s",
+                archive_count,
+                suspect_count,
+                sock_count,
+                non_sock_count,
+                elapsed_time)
 
+
+def is_sock(db, username):
+    '''Returns True if sock has indeed been blocked as a sock.
+
+    It's surprisingly non-trivial to figure out if this is the
+    case.  The current implementation uses the simplistic
+    assumption that if the user is mentioned in an SPI case as a
+    suspected sock, and they've been indef blocked, then they're a
+    sock.  The problem with this is that some suspects are found
+    to not be socks but are indef blocked for other reasons.
+
+    '''
+    with db.cursor() as cur:
+        cur.execute("""
+        select count(*) from ipblocks
+        join actor on ipb_user = actor_user
+        where actor_name = %(username)s
+        and ipb_expiry = 'infinity'
+        """, {'username': username})
+        row = cur.fetchone()
+    return bool(row[0])
 
 
 def directory_path(arg):

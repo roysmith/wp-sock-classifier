@@ -97,7 +97,6 @@ class FeatureFinder():
             suspect['deleted_edit_count'] = count
 
         suspect['block_count'] = self.get_block_count(username)
-        suspect['is_sock'] = self.get_is_sock(username)
 
 
     def get_registration_date(self, username):
@@ -194,26 +193,6 @@ class FeatureFinder():
             row = cur.fetchone()
             return row[0]
 
-    def get_is_sock(self, sock):
-        '''Returns True if sock has indeed been blocked as a sock.
-
-        It's surprisingly non-trivial to figure out if this is the
-        case.  The current implementation uses the simplistic
-        assumption that if the user is mentioned in an SPI case as a
-        suspected sock, and they've been indef blocked, then they're a
-        sock.  The problem with this is that some suspects are found
-        to not be socks but are indef blocked for other reasons.
-
-        '''
-        with self.db.cursor() as cur:
-            cur.execute("""
-            select count(*) from ipblocks
-            join actor on ipb_user = actor_user
-            where actor_name = %(username)s
-              and ipb_expiry = 'infinity'
-            """, {'username': sock})
-        row = cur.fetchone()
-        return bool(row[0])
 
 
 if __name__ == '__main__':
