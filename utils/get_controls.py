@@ -24,7 +24,9 @@ def main():
     #pylint: disable=R0914
     parser = argparse.ArgumentParser()
     parser.add_argument('--count',
-                        help='Number of users to select',
+                        help='''Number of candidate users to select.  The
+                        acutal number of users produced will (almost certainly)
+                        be less than this.''',
                         type=int,
                         default=100)
     config.provide_logging_cli(parser)
@@ -46,12 +48,15 @@ def main():
         row = cur.fetchone()
     max_id = row[0]
 
+    candidate_count = 0
     user_count = 0
     duplicate_count = 0
     non_existant_count = 0
     blocked_count = 0
+    unicode_error_count = 0
     user_ids = set()
-    while user_count < args.count:
+    while candidate_count < args.count:
+        candidate_count += 1
         user_id = random.randint(1, max_id)
         if user_id in user_ids:
             duplicate_count += 1
@@ -76,9 +81,15 @@ def main():
         if block_count:
             blocked_count += 1
             continue
-        record = {'sock': user.decode("utf-8"),
+        try:
+            username = user.decode("utf-8")
+        except UnicodeError as ex:
+            logger.error("Failed to decode %r as utf-8: %s", user, ex)
+            unicode_error_count += 1
+            continue
+        record = {'sock': username,
                   'is_sock': False,
-                  }
+        }
         print(json.dumps(record))
         user_count += 1
 
@@ -91,6 +102,8 @@ def main():
                 non_existant_count,
                 blocked_count,
                 elapsed_time)
+    if unicode_error_count:
+        logger.error("There were %d unicode errors!", unicode_error_count)
 
 
 if __name__ == '__main__':
