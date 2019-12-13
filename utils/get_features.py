@@ -76,28 +76,28 @@ class FeatureFinder():
         """
         # TODO: Only look up user_id once #36
 
-        sock = suspect['sock']
-        reg_date = self.get_registration_date(sock)
+        username = suspect['user']
+        reg_date = self.get_registration_date(username)
         if reg_date:
             suspect['reg_time'] = reg_date.isoformat()
 
-        first_contrib_time = self.get_first_contribution_time(sock)
+        first_contrib_time = self.get_first_contribution_time(username)
         if first_contrib_time:
             suspect['first_contrib_time'] = first_contrib_time.isoformat()
 
         if reg_date and first_contrib_time:
             suspect['first_contrib_days'] = (first_contrib_time - reg_date).total_seconds() / SEC_PER_DAY
 
-        count = self.get_live_edit_count(sock)
+        count = self.get_live_edit_count(username)
         if count is not None:
             suspect['live_edit_count'] = count
 
-        count = self.get_deleted_edit_count(sock)
+        count = self.get_deleted_edit_count(username)
         if count is not None:
             suspect['deleted_edit_count'] = count
 
-        suspect['block_count'] = self.get_block_count(sock)
-        suspect['is_sock'] = self.get_is_sock(sock)
+        suspect['block_count'] = self.get_block_count(username)
+        suspect['is_sock'] = self.get_is_sock(username)
 
 
     def get_registration_date(self, username):

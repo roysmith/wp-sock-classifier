@@ -106,7 +106,7 @@ class Archive:
                 suspect = {}
                 if master:
                     suspect['master'] = master
-                suspect['sock'] = sock
+                suspect['user'] = sock
                 suspects.append(suspect)
             return suspects
         except ArchiveError as ex:
