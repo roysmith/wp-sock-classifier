@@ -27,7 +27,9 @@ class ArchiveError(ValueError):
 def main():
     "Main program"
     parser = argparse.ArgumentParser(epilog='''If neither --archive nor --archive_dir
-    are given, reads from stdin.''')
+                                               are given, reads from stdin.''',
+                                     parents=[config.logging_cli()])
+
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument('--archive',
                              help='SPI archive file to read',
@@ -41,7 +43,6 @@ def main():
                         help='Output file',
                         type=argparse.FileType('w'),
                         default=sys.stdout)
-    config.provide_logging_cli(parser)
 
 
     args = parser.parse_args()

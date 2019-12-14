@@ -6,12 +6,13 @@ import argparse
 import logging
 from pathlib import Path
 
-def provide_logging_cli(parser):
+def logging_cli():
     """Provide the common CLI arguments for logging.
 
-    Parser is an ArgumentParser instance, which is mutated in-place.
+    Returns a ArguemntParser.
 
     """
+    parser = argparse.ArgumentParser(add_help=False)
     group = parser.add_argument_group(title="logging")
     group.add_argument('--log',
                        help='File to write log messages',
@@ -23,6 +24,7 @@ def provide_logging_cli(parser):
                        help='Logging level',
                        choices=['debug', 'info', 'warning', 'error'],
                        default='info')
+    return parser
 
 def configure_logging(cli_args):
     """Configure logging.

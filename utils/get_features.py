@@ -26,13 +26,12 @@ NAMESPACE_USER = 2
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(parents=[config.logging_cli()])
     parser.add_argument('--progress',
                         help='log progress every N suspects',
                         type=int,
                         metavar='N')
-    config.provide_logging_cli(parser)
-
+    
     args = parser.parse_args()
     config.configure_logging(args)
     logger = logging.getLogger('get_features')
