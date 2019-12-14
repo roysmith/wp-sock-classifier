@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-"""Find known socks, based on SPI case archives.
+"""Find known socks, based on SPI case archives.  Duplicates are
+supressed.
 
 The goal here is to only extract information which is specific to the
 SPI report, so just the username and the sockmaster.  Other features
@@ -62,8 +63,9 @@ def main():
 
     archive_count = 0
     suspect_count = 0
-    sock_count = 0
     non_sock_count = 0
+    duplicate_count = 0
+    seen_users = set()
     for stream in input_streams:
         archive_count += 1
         logger.info("Starting archive %d: %s", archive_count, stream.name)
@@ -71,8 +73,11 @@ def main():
         for suspect in archive.get_suspects():
             suspect_count += 1
             user = suspect['user']
+            if user in seen_users:
+                duplicate_count += 1
+                logger.info("Duplicate supressed: %s", user)
             if is_sock(db, user):
-                sock_count += 1
+                seen_users.add(user)
                 suspect['is_sock'] = True
                 print(json.dumps(suspect), file=args.out)
             else:
@@ -81,11 +86,12 @@ def main():
 
     finish_time = datetime.datetime.now()
     elapsed_time = finish_time - start_time
-    logger.info("Done with %d archives, %d suspects, %d socks, %d non-socks in %s",
+    logger.info("Done with %d archives, %d suspects, %d socks, %d non-socks, %d duplicates in %s",
                 archive_count,
                 suspect_count,
-                sock_count,
+                len(seen_users),
                 non_sock_count,
+                duplicate_count,
                 elapsed_time)
 
 
