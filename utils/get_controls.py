@@ -22,15 +22,13 @@ import config
 def main():
     "Main program"
     #pylint: disable=R0914
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(parents=[config.logging_cli()])
     parser.add_argument('--count',
                         help='''Number of candidate users to select.  The
                         acutal number of users produced will (almost certainly)
                         be less than this.''',
                         type=int,
                         default=100)
-    config.provide_logging_cli(parser)
-
 
     args = parser.parse_args()
     config.configure_logging(args)
