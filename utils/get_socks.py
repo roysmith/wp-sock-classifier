@@ -47,7 +47,7 @@ def main():
     args = parser.parse_args()
     config.configure_logging(args)
 
-    logger = logging.getLogger('get_suspects')
+    logger = logging.getLogger('get_socks')
     db = toolforge.connect('enwiki')
 
     if args.archive_dir:
@@ -123,7 +123,7 @@ class Archive:
 
     def __init__(self, stream):
         self.stream = stream
-        self.logger = logging.getLogger('get_suspects.archive')
+        self.logger = logging.getLogger('get_socks.archive')
 
 
     def get_suspects(self):
