@@ -76,6 +76,7 @@ def main():
             if user in seen_users:
                 duplicate_count += 1
                 logger.info("Duplicate supressed: %s", user)
+                continue
             if is_sock(db, user):
                 seen_users.add(user)
                 suspect['is_sock'] = True
