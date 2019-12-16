@@ -19,7 +19,7 @@ sock-classifier
 |     Your python virtualenv.  If you don't create a new virtualenv for every project,
 |     just go home now and rethink your life.
 ├── jobs
-│     This is where grid jobs write their various control and output files.  In the normal flow
+|     This is where grid jobs write their various control and output files.  In the normal flow
 |     of data analysis, selected output files from here will get migrated into the data directory
 |     once they pass muster.  I think of the job directories as ephemeral temp space, and the data
 |     directory as more archival.
@@ -29,11 +29,11 @@ sock-classifier
 |     tailing the log across runs, to keep an eye on things.
 ├── src
     |  This is the what's kept in version control, i.e. the directory where this README file lives.
-    ├── scripts
+    ├── scripts
     |     Scripts to run processing steps.  Some steps can be run by executing the code directly,
     |     but anything run in the grid environment will need a driver script to set up the control
     |     files, job directories, etc.
-    └── utils
+    └── utils
           The actual programs that process data live here.
 ```
 
