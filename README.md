@@ -25,10 +25,6 @@ sock-classifier
 |     directory as more archival.
 +-- src
     |  This is the what's kept in version control, i.e. the directory where this README file lives.
-    +-- scripts
-    |     Scripts to run processing steps.  Some steps can be run by executing the code directly,
-    |     but anything run in the grid environment will need a driver script to set up the control
-    |     files, job directories, etc.
     +-- utils
           The actual programs that process data live here.
 ```
