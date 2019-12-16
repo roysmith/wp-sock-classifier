@@ -29,6 +29,11 @@ def main():
                         be less than this.''',
                         type=int,
                         default=100)
+    parser.add_argument('--progress',
+                        help='log progress every N candidates',
+                        type=int,
+                        default=1000,
+                        metavar='N')
 
     args = parser.parse_args()
     config.configure_logging(args)
@@ -55,6 +60,10 @@ def main():
     user_ids = set()
     while candidate_count < args.count:
         candidate_count += 1
+        if candidate_count % args.progress == 0:
+            logger.info("processed %d candidates, %d valid control users",
+                        candidate_count,
+                        user_count)
         user_id = random.randint(1, max_id)
         if user_id in user_ids:
             duplicate_count += 1
