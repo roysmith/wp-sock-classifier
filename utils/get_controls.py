@@ -94,7 +94,7 @@ def main():
             logger.error("Failed to decode %r as utf-8: %s", user, ex)
             unicode_error_count += 1
             continue
-        record = {'sock': username,
+        record = {'user': username,
                   'is_sock': False,
         }
         print(json.dumps(record))
