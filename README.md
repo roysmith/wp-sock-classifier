@@ -23,10 +23,6 @@ sock-classifier
 |     of data analysis, selected output files from here will get migrated into the data directory
 |     once they pass muster.  I think of the job directories as ephemeral temp space, and the data
 |     directory as more archival.
-+-- logs
-|     This is where log files get written.  I like to have each procesing step (i.e. script) have a
-|     single log file, shared by all runs of the job.  This makes it easy to keep a window open
-|     tailing the log across runs, to keep an eye on things.
 +-- src
     |  This is the what's kept in version control, i.e. the directory where this README file lives.
     +-- scripts
