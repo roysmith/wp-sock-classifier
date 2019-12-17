@@ -40,13 +40,14 @@ def main():
     logger.info("job-name = %s", args.job_name)
     start_time = datetime.datetime.now()
 
-    finder = FeatureFinder(toolforge.connect('enwiki'))
+    db_connection = toolforge.connect('enwiki')
 
     count = 0
     for line in sys.stdin:
-        suspect = json.loads(line)
-        finder.find(suspect)
-        print(json.dumps(suspect))
+        initial_data = json.loads(line)
+        suspect = Suspect(db_connection, initial_data)
+        suspect.add_all_features()
+        print(json.dumps(suspect.data))
         count += 1
         if args.progress and (count % args.progress == 0):
             logger.info("Processed %s suspects", count)
@@ -56,46 +57,54 @@ def main():
     logger.info("Processed %d suspects in %s", count, elapsed_time)
 
 
-class FeatureFinder():
-    """Find suspect features.
+class Suspect:
+    """A suspected sock.
 
     """
-    def __init__(self, db):
-        self.logger = logging.getLogger('get_features.featureFinder')
+    def __init__(self, db, initial_data):
+        """Db is a database connection.
+
+        Initial_data is a dict containing some initially known data
+        about the suspect.  The passed-in dict is not modified.
+
+        """
+        self.logger = logging.getLogger('get_features.suspect')
         self.db = db
+        self.data = initial_data.copy()
 
 
-    def find(self, suspect):
-        """Get the features for a suspected sock.
+    def add_all_features(self):
 
-        Suspect is a dict which is modified in-place.
+        """Update the suspect's data with all the known features, if possible.
+        Some features may require information which is unavailable, in
+        which case the coresponding keys are left unset.
 
         Returns None
 
         """
         # TODO: Only look up user_id once #36
 
-        username = suspect['user']
+        username = self.data['user']
         reg_date = self.get_registration_date(username)
         if reg_date:
-            suspect['reg_time'] = reg_date.isoformat()
+            self.data['reg_time'] = reg_date.isoformat()
 
         first_contrib_time = self.get_first_contribution_time(username)
         if first_contrib_time:
-            suspect['first_contrib_time'] = first_contrib_time.isoformat()
+            self.data['first_contrib_time'] = first_contrib_time.isoformat()
 
         if reg_date and first_contrib_time:
-            suspect['first_contrib_days'] = (first_contrib_time - reg_date).total_seconds() / SEC_PER_DAY
+            self.data['first_contrib_days'] = (first_contrib_time - reg_date).total_seconds() / SEC_PER_DAY
 
         count = self.get_live_edit_count(username)
         if count is not None:
-            suspect['live_edit_count'] = count
+            self.data['live_edit_count'] = count
 
         count = self.get_deleted_edit_count(username)
         if count is not None:
-            suspect['deleted_edit_count'] = count
+            self.data['deleted_edit_count'] = count
 
-        suspect['block_count'] = self.get_block_count(username)
+        self.data['block_count'] = self.get_block_count(username)
 
 
     def get_registration_date(self, username):
