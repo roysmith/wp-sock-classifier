@@ -46,9 +46,11 @@ def main():
     count = 0
     for line in sys.stdin:
         initial_data = json.loads(line)
+
         suspect = Suspect(db_connection, initial_data)
         suspect.add_all_features()
-        print(json.dumps(suspect.data))
+        print(json.dumps(suspect.clean_data()))
+
         count += 1
         if args.progress and (count % args.progress == 0):
             logger.info("Processed %s suspects", count)
@@ -74,36 +76,34 @@ class Suspect:
         self.data = initial_data.copy()
 
 
+    def clean_data(self):
+        """Returns a clean copy of the suspect's data.
+
+        Internally, missing feature values are indicated by either the
+        key not being in the data dict at all, or the value being
+        None.  This returns a copy of the internal data with all the
+        None values elided.
+
+        """
+        return {k: v for k, v in self.data.items() if v is not None}
+
+
     def add_all_features(self):
 
         """Update the suspect's data with all the known features, if possible.
         Some features may require information which is unavailable, in
-        which case the coresponding keys are left unset.
+        which case the coresponding keys are set to None.
 
         Returns None.
 
         """
         # TODO: Only look up user_id once #36
 
-        reg_time = RegistrationTime(self.db, self.data).eval()
-        if reg_time:
-            self.data['reg_time'] = reg_time
-
-        first_contrib_time = FirstContributionTime(self.db, self.data).eval()
-        if first_contrib_time:
-            self.data['first_contrib_time'] = first_contrib_time
-
-        if reg_time and first_contrib_time:
-            self.data['first_contrib_interval'] = (first_contrib_time - reg_time)
-
-        count = LiveEditCount(self.db, self.data).eval()
-        if count is not None:
-            self.data['live_edit_count'] = count
-
-        count = DeletedEditCount(self.db, self.data).eval()
-        if count is not None:
-            self.data['deleted_edit_count'] = count
-
+        self.data['reg_time'] = RegistrationTime(self.db, self.data).eval()
+        self.data['first_contrib_time'] = FirstContributionTime(self.db, self.data).eval()
+        self.data['first_contrib_interval'] = FirstContribInterval(self.db, self.data).eval()
+        self.data['live_edit_count'] = LiveEditCount(self.db, self.data).eval()
+        self.data['deleted_edit_count'] = DeletedEditCount(self.db, self.data).eval()
         self.data['block_count'] = BlockCount(self.db, self.data).eval()
 
 
@@ -179,6 +179,16 @@ class FirstContributionTime(Feature):
             if rows:
                 timestamp = rows[0][0]
                 return self.wikidb_timestamp_to_posix(timestamp)
+
+
+class FirstContribInterval(Feature):
+    def eval(self):
+        """Return the number of seconds between when a user registered and
+        made their first edit.
+
+        """
+        if self.data.get('first_contrib_time') and self.data.get('reg_time'):
+            return self.data['first_contrib_time'] - self.data['reg_time']
 
 
 class LiveEditCount(Feature):
