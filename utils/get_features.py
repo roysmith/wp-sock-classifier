@@ -80,7 +80,7 @@ class Suspect:
         Some features may require information which is unavailable, in
         which case the coresponding keys are left unset.
 
-        Returns None
+        Returns None.
 
         """
         # TODO: Only look up user_id once #36
