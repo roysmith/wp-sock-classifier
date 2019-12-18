@@ -13,6 +13,7 @@ import datetime
 import json
 import logging
 import sys
+from types import MappingProxyType
 
 import toolforge
 
@@ -84,44 +85,39 @@ class Suspect:
         """
         # TODO: Only look up user_id once #36
 
-        username = self.data['user']
-        reg_date = self.get_registration_date(username)
+        reg_date = RegistrationDate(self.db, self.data).eval()
         if reg_date:
             self.data['reg_time'] = reg_date.isoformat()
 
-        first_contrib_time = self.get_first_contribution_time(username)
+        first_contrib_time = FirstContributionTime(self.db, self.data).eval()
         if first_contrib_time:
             self.data['first_contrib_time'] = first_contrib_time.isoformat()
 
         if reg_date and first_contrib_time:
             self.data['first_contrib_days'] = (first_contrib_time - reg_date).total_seconds() / SEC_PER_DAY
 
-        count = self.get_live_edit_count(username)
+        count = LiveEditCount(self.db, self.data).eval()
         if count is not None:
             self.data['live_edit_count'] = count
 
-        count = self.get_deleted_edit_count(username)
+        count = DeletedEditCount(self.db, self.data).eval()
         if count is not None:
             self.data['deleted_edit_count'] = count
 
-        self.data['block_count'] = self.get_block_count(username)
+        self.data['block_count'] = BlockCount(self.db, self.data).eval()
 
 
-    def get_registration_date(self, username):
-        """Return a (UTC) datetime if a registration time can be found for the user.
-        If no entry can be found in the logs, return None.
-        """
-        with self.db.cursor() as cur:
-            cur.execute("""
-            SELECT user_registration
-            FROM user
-            WHERE user_name = %(username)s
-            """, {'username': username})
-            rows = cur.fetchall()
-            if rows:
-                timestamp = rows[0][0]
-                if timestamp:
-                    return self.wikidb_timestamp_to_datetime(timestamp)
+class Feature:
+    """Each subclass of this represents a single feature.
+
+    The eval() method knows how to gather whatever input data it needs
+    (including from other previously-evaluated features).  If any of
+    the required data is unavailable, it returns None.
+
+    """
+    def __init__(self, db, initial_data):
+        self.db = db
+        self.data = MappingProxyType(initial_data)
 
 
     @staticmethod
@@ -138,9 +134,27 @@ class Suspect:
         return datetime.datetime(*yyyymmddhhmmss)
 
 
-    def get_first_contribution_time(self, sock):
+class RegistrationDate(Feature):
+    def eval(self):
+        """Return when the user registered, as a (UTC) datetime.
+
+        """
+        with self.db.cursor() as cur:
+            cur.execute("""
+            SELECT user_registration
+            FROM user
+            WHERE user_name = %(username)s
+            """, {'username': self.data['user']})
+            rows = cur.fetchall()
+            if rows:
+                timestamp = rows[0][0]
+                if timestamp:
+                    return self.wikidb_timestamp_to_datetime(timestamp)
+
+
+class FirstContributionTime(Feature):
+    def eval(self):
         """Return a (UTC) datetime if the first edit time can be found for the user.
-        If no edits can be found, return None.
 
         Note that if the user's first edit has been deleted, it won't
         be visible here.  In that case, this returns the time of the
@@ -155,39 +169,42 @@ class Suspect:
             WHERE actor_name = %(sock)s
             ORDER by rev_timestamp ASC
             LIMIT 1
-            """, {'sock': sock})
+            """, {'sock': self.data['user']})
             rows = cur.fetchall()
             if rows:
                 timestamp = rows[0][0]
                 return self.wikidb_timestamp_to_datetime(timestamp)
 
 
-    def get_live_edit_count(self, sock):
+class LiveEditCount(Feature):
+    def eval(self):
         with self.db.cursor() as cur:
             # TODO: Use better query for live_edit_count #35
             cur.execute("""
             SELECT user_editcount
             FROM user
             WHERE user_name = %(username)s
-            """, {'username': sock})
+            """, {'username': self.data['user']})
             row = cur.fetchone()
             if row:
                 return row[0]
 
 
-    def get_deleted_edit_count(self, sock):
+class DeletedEditCount(Feature):
+    def eval(self):
         with self.db.cursor() as cur:
             cur.execute("""
             SELECT count(*)
             FROM archive_userindex
             JOIN actor ON ar_actor = actor_id
             WHERE actor_name = %(username)s
-            """, {'username': sock})
+            """, {'username': self.data['user']})
             row = cur.fetchone()
             return row[0]
 
 
-    def get_block_count(self, sock):
+class BlockCount(Feature):
+    def eval(self):
         '''Returns the number of times the user has been blocked.'''
         with self.db.cursor() as cur:
             cur.execute("""
@@ -197,7 +214,7 @@ class Suspect:
               and log_title = %(username)s
               and log_type = 'block'
               and log_action = 'block'
-            """, {'namespace': NAMESPACE_USER, 'username': sock})
+            """, {'namespace': NAMESPACE_USER, 'username': self.data['user']})
             row = cur.fetchone()
             return row[0]
 
