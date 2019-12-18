@@ -10,6 +10,7 @@ The users are read from stdin, output is to stdout.
 from pathlib import Path
 import argparse
 import datetime
+import inspect
 import json
 import logging
 import sys
@@ -32,8 +33,16 @@ def main():
                         help='log progress every N suspects',
                         type=int,
                         metavar='N')
+    parser.add_argument('--list_features',
+                        action='store_true',
+                        help='print all available features and exit')
     
     args = parser.parse_args()
+
+    if args.list_features:
+        print_features()
+        return
+
     config.configure_logging(args)
     logger = logging.getLogger('get_features')
 
@@ -58,6 +67,16 @@ def main():
     finish_time = datetime.datetime.now()
     elapsed_time = finish_time - start_time
     logger.info("Processed %d suspects in %s", count, elapsed_time)
+
+
+def print_features():
+    map = {cls.tag: cls for cls in Feature.subclasses()}
+    for tag in sorted(map.keys()):
+        deps = map[tag].dependencies
+        if deps:
+            print('%s (depends on %s)' % (tag, ', '.join(d.tag for d in deps)))
+        else:
+            print('%s' % tag)
 
 
 class Suspect:
@@ -121,6 +140,15 @@ class Feature:
 
 
     @staticmethod
+    def subclasses():
+        "Iterates over all the Feature subclasses."
+        module = inspect.getmodule(Feature)
+        for name, member in inspect.getmembers(module, inspect.isclass):
+            if issubclass(member, Feature) and member != Feature:
+                yield member
+
+
+    @staticmethod
     def wikidb_timestamp_to_posix(ts):
         """Return a POSIX timestamp from a wiki database timestamp
         string.  The later is a 14-digit string of the form
@@ -138,10 +166,12 @@ class Feature:
 
 
 class RegistrationTime(Feature):
-    def eval(self):
-        """Return when the user registered, as a POSIX timestamp.
+    """When the user registered, as a POSIX timestamp.
 
-        """
+    """
+    dependencies = set()
+    tag = 'reg_time'
+    def eval(self):
         with self.db.cursor() as cur:
             cur.execute("""
             SELECT user_registration
@@ -157,15 +187,18 @@ class RegistrationTime(Feature):
 
 
 class FirstContributionTime(Feature):
+    """First edit time, as a POSIX timestamp.
+
+    Note that if the user's first edit has been deleted, it won't be
+    visible here.  In that case, this returns the time of the first
+    non-deleted edit.  It's unclear how revdel affects this.
+
+    TODO: first_contrib_time should check for deleted edits #50
+
+    """
+    dependencies = set()
+    tag = 'first_contrib_time'
     def eval(self):
-        """Return a POSIX timestamp if the first edit time can be found for
-        the user.
-
-        Note that if the user's first edit has been deleted, it won't
-        be visible here.  In that case, this returns the time of the
-        first non-deleted edit.  It's unclear how revdel affects this.
-
-        """
         with self.db.cursor() as cur:
             cur.execute("""
             SELECT rev_timestamp
@@ -182,16 +215,23 @@ class FirstContributionTime(Feature):
 
 
 class FirstContribInterval(Feature):
-    def eval(self):
-        """Return the number of seconds between when a user registered and
-        made their first edit.
+    """Time between when a user registered and they made their first edit,
+    in seconds.
 
-        """
+    """
+    dependencies = set([RegistrationTime, FirstContributionTime])
+    tag = 'first_contrib_interval'
+    def eval(self):
         if self.data.get('first_contrib_time') and self.data.get('reg_time'):
             return self.data['first_contrib_time'] - self.data['reg_time']
 
 
 class LiveEditCount(Feature):
+    """Number of live (i.e. non-deleted) edits.
+
+    """
+    dependencies = set()
+    tag = 'live_edit_count'
     def eval(self):
         with self.db.cursor() as cur:
             # TODO: Use better query for live_edit_count #35
@@ -206,6 +246,11 @@ class LiveEditCount(Feature):
 
 
 class DeletedEditCount(Feature):
+    """Number of edits that have been deleted.
+
+    """
+    dependencies = set()
+    tag = 'deleted_edit_count'
     def eval(self):
         with self.db.cursor() as cur:
             cur.execute("""
@@ -219,6 +264,12 @@ class DeletedEditCount(Feature):
 
 
 class BlockCount(Feature):
+    """Number of times this user has been blocked, regardless of whether
+    any blocks are currently active.
+
+    """
+    dependencies = set()
+    tag = 'block_count'
     def eval(self):
         '''Returns the number of times the user has been blocked.'''
         with self.db.cursor() as cur:
@@ -232,7 +283,6 @@ class BlockCount(Feature):
             """, {'namespace': NAMESPACE_USER, 'username': self.data['user']})
             row = cur.fetchone()
             return row[0]
-
 
 
 if __name__ == '__main__':
