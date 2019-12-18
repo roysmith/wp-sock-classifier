@@ -85,16 +85,16 @@ class Suspect:
         """
         # TODO: Only look up user_id once #36
 
-        reg_date = RegistrationDate(self.db, self.data).eval()
-        if reg_date:
-            self.data['reg_time'] = reg_date.isoformat()
+        reg_time = RegistrationTime(self.db, self.data).eval()
+        if reg_time:
+            self.data['reg_time'] = reg_time
 
         first_contrib_time = FirstContributionTime(self.db, self.data).eval()
         if first_contrib_time:
-            self.data['first_contrib_time'] = first_contrib_time.isoformat()
+            self.data['first_contrib_time'] = first_contrib_time
 
-        if reg_date and first_contrib_time:
-            self.data['first_contrib_days'] = (first_contrib_time - reg_date).total_seconds() / SEC_PER_DAY
+        if reg_time and first_contrib_time:
+            self.data['first_contrib_interval'] = (first_contrib_time - reg_time)
 
         count = LiveEditCount(self.db, self.data).eval()
         if count is not None:
@@ -121,22 +121,25 @@ class Feature:
 
 
     @staticmethod
-    def wikidb_timestamp_to_datetime(ts):
-        """Return a (UTC) datetime from a wiki database timestamp string.
-        This is a 14-digit string of the form YYYYMMDDHHMMSS,
-        i.e. 20191129202516 for 2019 November 29 20:25:16.  See
-        https://www.mediawiki.org/wiki/Manual:Timestamp for more
-        details.
+    def wikidb_timestamp_to_posix(ts):
+        """Return a POSIX timestamp from a wiki database timestamp
+        string.  The later is a 14-digit string of the form
+        YYYYMMDDHHMMSS, i.e. 20191129202516 for 2019 November 29
+        20:25:16.  See https://www.mediawiki.org/wiki/Manual:Timestamp
+        for more details.
+
+        Note: the returned value is an interger.
 
         """
         parts = (ts[0:4], ts[4:6], ts[6:8], ts[8:10], ts[10:12], ts[12:14])
         yyyymmddhhmmss = list(map(int, parts))
-        return datetime.datetime(*yyyymmddhhmmss)
+        dt = datetime.datetime(*yyyymmddhhmmss)
+        return int(dt.timestamp())
 
 
-class RegistrationDate(Feature):
+class RegistrationTime(Feature):
     def eval(self):
-        """Return when the user registered, as a (UTC) datetime.
+        """Return when the user registered, as a POSIX timestamp.
 
         """
         with self.db.cursor() as cur:
@@ -149,12 +152,14 @@ class RegistrationDate(Feature):
             if rows:
                 timestamp = rows[0][0]
                 if timestamp:
-                    return self.wikidb_timestamp_to_datetime(timestamp)
+                    # unclear if it's possible for this branch not to be taken.
+                    return self.wikidb_timestamp_to_posix(timestamp)
 
 
 class FirstContributionTime(Feature):
     def eval(self):
-        """Return a (UTC) datetime if the first edit time can be found for the user.
+        """Return a POSIX timestamp if the first edit time can be found for
+        the user.
 
         Note that if the user's first edit has been deleted, it won't
         be visible here.  In that case, this returns the time of the
@@ -173,7 +178,7 @@ class FirstContributionTime(Feature):
             rows = cur.fetchall()
             if rows:
                 timestamp = rows[0][0]
-                return self.wikidb_timestamp_to_datetime(timestamp)
+                return self.wikidb_timestamp_to_posix(timestamp)
 
 
 class LiveEditCount(Feature):
