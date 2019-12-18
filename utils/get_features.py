@@ -36,7 +36,7 @@ def main():
     parser.add_argument('--list_features',
                         action='store_true',
                         help='print all available features and exit')
-    
+
     args = parser.parse_args()
 
     if args.list_features:
