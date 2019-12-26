@@ -24,11 +24,15 @@ def main():
     #pylint: disable=R0914
     parser = argparse.ArgumentParser(parents=[config.logging_cli()])
     parser.add_argument('--count',
-                        help='''Number of candidate users to select.  The
-                        acutal number of users produced will (almost certainly)
-                        be less than this.''',
+                        help='''Number of candidate users to select (default: 100).
+                        The acutal number of users produced will (almost
+                        certainly) be less than this.''',
                         type=int,
                         default=100)
+    parser.add_argument('--min-edits',
+                        help='Minimum number of edits (default: 0) for selected users.',
+                        type=int,
+                        default=0)
     parser.add_argument('--progress',
                         help='log progress every N candidates',
                         type=int,
@@ -57,6 +61,7 @@ def main():
     non_existant_count = 0
     blocked_count = 0
     unicode_error_count = 0
+    too_few_edits_count = 0
     user_ids = set()
     while candidate_count < args.count:
         candidate_count += 1
@@ -71,7 +76,7 @@ def main():
         user_ids.add(user_id)
         with db.cursor() as cur:
             cur.execute("""
-            select user_name
+            select user_name, user_editcount
             from user
             where user_id = %(user_id)s
             """, {'user_id': user_id})
@@ -79,7 +84,10 @@ def main():
         if not rows:
             non_existant_count += 1
             continue
-        user = rows[0][0]
+        user, editcount = rows[0]
+        if editcount < args.min_edits:
+            too_few_edits_count += 1
+            continue
         with db.cursor() as cur:
             cur.execute("select count(*)from ipblocks where ipb_user = %(user_id)s",
                         {'user_id': user_id})
@@ -103,11 +111,12 @@ def main():
 
     finish_time = datetime.datetime.now()
     elapsed_time = finish_time - start_time
-    logger.info("Processed %d users (%d duplicates, %d non-existant, %d blocked) in %s",
+    logger.info("Processed %d users (%d duplicates, %d non-existant, %d blocked, %d too few edits) in %s",
                 user_count,
                 duplicate_count,
                 non_existant_count,
                 blocked_count,
+                too_few_edits_count,
                 elapsed_time)
     if unicode_error_count:
         logger.error("There were %d unicode errors!", unicode_error_count)
