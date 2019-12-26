@@ -44,6 +44,7 @@ def main():
 
     %(base_dir)s/src/utils/get_controls.py \\
       --count=%(user_count)s \\
+      --min-edits=1 \\
       --job-name=%(job_name)s \\
       --log=%(job_dir)s/get_controls.log
     ''')
