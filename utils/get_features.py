@@ -36,6 +36,17 @@ def main():
     parser.add_argument('--list_features',
                         action='store_true',
                         help='print all available features and exit')
+    parser.add_argument('--feature',
+                        action='append',
+                        dest='features',
+                        help='''Feature to evaluate.  May be repeated.
+                        Features are evaluated in
+                        the order given; it is the responsibility of
+                        the user to include the required dependencies,
+                        and in the right order.  If no features are
+                        specified, defaults to all features.  See
+                        --list-features to get a list of available
+                        features.''')
 
     args = parser.parse_args()
 
@@ -43,11 +54,20 @@ def main():
         print_features()
         return
 
+    features = args.features or ['reg_time',
+                                 'first_contrib_time',
+                                 'first_contrib_interval',
+                                 'live_edit_count',
+                                 'deleted_edit_count',
+                                 'block_count']
+    check_valid_features(features)
+
     config.configure_logging(args)
     logger = logging.getLogger('get_features')
 
     logger.info("Starting work")
     logger.info("job-name = %s", args.job_name)
+    logger.info("Using features: %s", features)
     start_time = datetime.datetime.now()
 
     db_connection = toolforge.connect('enwiki')
@@ -57,7 +77,7 @@ def main():
         initial_data = json.loads(line)
 
         suspect = Suspect(db_connection, initial_data)
-        suspect.add_all_features()
+        suspect.add_features(features)
         print(json.dumps(suspect.clean_data()))
 
         count += 1
@@ -77,6 +97,14 @@ def print_features():
             print('%s (depends on %s)' % (tag, ', '.join(d.tag for d in deps)))
         else:
             print('%s' % tag)
+
+
+def check_valid_features(features):
+    valid_features = set(cls.tag for cls in Feature.subclasses())
+    for feature in features:
+        if feature not in valid_features:
+            print("Invalid feature: %s" % feature)
+            sys.exit(1)
 
 
 class Suspect:
@@ -107,9 +135,8 @@ class Suspect:
         return {k: v for k, v in self.data.items() if v is not None}
 
 
-    def add_all_features(self):
-
-        """Update the suspect's data with all the known features, if possible.
+    def add_features(self, features):
+        """Update the suspect's data with all requested freatures, if possible.
         Some features may require information which is unavailable, in
         which case the coresponding keys are set to None.
 
@@ -117,13 +144,10 @@ class Suspect:
 
         """
         # TODO: Only look up user_id once #36
-
-        self.data['reg_time'] = RegistrationTime(self.db, self.data).eval()
-        self.data['first_contrib_time'] = FirstContributionTime(self.db, self.data).eval()
-        self.data['first_contrib_interval'] = FirstContribInterval(self.db, self.data).eval()
-        self.data['live_edit_count'] = LiveEditCount(self.db, self.data).eval()
-        self.data['deleted_edit_count'] = DeletedEditCount(self.db, self.data).eval()
-        self.data['block_count'] = BlockCount(self.db, self.data).eval()
+        feature_map = {cls.tag: cls for cls in Feature.subclasses()}
+        for key in features:
+            cls = feature_map[key]
+            self.data[key] = cls(self.db, self.data).eval()
 
 
 class Feature:
