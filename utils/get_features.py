@@ -165,7 +165,12 @@ class Feature:
 
     @staticmethod
     def subclasses():
-        "Iterates over all the Feature subclasses."
+        """Iterates over all the Feature subclasses.
+
+        Note: this will only find subclasses defined in the same
+        module as Feature.
+
+        """
         module = inspect.getmodule(Feature)
         for name, member in inspect.getmembers(module, inspect.isclass):
             if issubclass(member, Feature) and member != Feature:
