@@ -90,7 +90,7 @@ def main():
 
 
 def print_features():
-    map = {cls.tag: cls for cls in Feature.subclasses()}
+    map = Feature.map_by_tag()
     for tag in sorted(map.keys()):
         deps = map[tag].dependencies
         if deps:
@@ -144,7 +144,7 @@ class Suspect:
 
         """
         # TODO: Only look up user_id once #36
-        feature_map = {cls.tag: cls for cls in Feature.subclasses()}
+        feature_map = Feature.map_by_tag()
         for key in features:
             cls = feature_map[key]
             self.data[key] = cls(self.db, self.data).eval()
@@ -175,6 +175,20 @@ class Feature:
         for name, member in inspect.getmembers(module, inspect.isclass):
             if issubclass(member, Feature) and member != Feature:
                 yield member
+
+
+    _tag_map = None
+
+    @staticmethod
+    def map_by_tag():
+        """Return a (immutable) map of tag -> Feature subclass.
+
+        The map is generated when this module is imported, so if any
+        additional subclasses are defined later, they won't be
+        included.
+
+        """
+        return Feature._tag_map
 
 
     @staticmethod
@@ -312,6 +326,10 @@ class BlockCount(Feature):
             """, {'namespace': NAMESPACE_USER, 'username': self.data['user']})
             row = cur.fetchone()
             return row[0]
+
+
+# See map_by_tag()
+Feature._tag_map = MappingProxyType({cls.tag: cls for cls in Feature.subclasses()})
 
 
 if __name__ == '__main__':
