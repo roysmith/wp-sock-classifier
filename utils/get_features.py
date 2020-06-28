@@ -136,9 +136,9 @@ class Suspect:
 
 
     def add_features(self, features):
-        """Update the suspect's data with all requested freatures, if possible.
+        """Update the suspect's data with all requested features, if possible.
         Some features may require information which is unavailable, in
-        which case the coresponding keys are set to None.
+        which case the corresponding keys are set to None.
 
         Returns None.
 

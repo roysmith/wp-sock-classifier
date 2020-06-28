@@ -87,7 +87,7 @@ class ProtoStreamReader:
     def read_delimited_proto(self, proto_class):
         """Reads and parses a serialized proto from the stream, preceeded by
         the size of the proto as a varint.  This is intended to be
-        wire-compatable with Java's MessageLite.parseDelimitedFrom()
+        wire-compatible with Java's MessageLite.parseDelimitedFrom()
         method.
 
         Returns a new instance of proto_class, initialized with the
@@ -136,7 +136,7 @@ class ProtoStreamWriter:
 
     def write_delimited_proto(self, proto):
         """Write a serialized proto to the stream, preceeded by the size of
-        the proto as a varint.  This is intended to be wire-compatable
+        the proto as a varint.  This is intended to be wire-compatible
         with Java's MessageLite.writeDelimitedTo() method.
 
         """

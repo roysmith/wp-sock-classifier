@@ -25,7 +25,7 @@ def main():
     parser = argparse.ArgumentParser(parents=[config.logging_cli()])
     parser.add_argument('--count',
                         help='''Number of candidate users to select (default: 100).
-                        The acutal number of users produced will (almost
+                        The actual number of users produced will (almost
                         certainly) be less than this.''',
                         type=int,
                         default=100)
