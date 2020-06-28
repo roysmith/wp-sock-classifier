@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """Find known socks, based on SPI case archives.  Duplicates are
-supressed.
+suppressed.
 
 The goal here is to only extract information which is specific to the
 SPI report, so just the username and the sockmaster.  Other features
